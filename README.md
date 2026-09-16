@@ -61,11 +61,14 @@ aloud. Two sources:
   (the maintained successor of rhasspy/piper) with its Japanese voice:
 
   ```sh
-  pipx install "piper-tts[http]"          # Arch: pipx keeps it out of pacman's Python
+  pipx install "piper-tts[http,ja]"       # ja = Japanese phonemizer (OpenJTalk), http = server
   install -Dm755 ~/dms-kanji-widget/say-ja ~/.local/bin/say-ja
   say-ja setup                            # downloads the ja_JA-hi_fi_captain-medium voice
   say-ja テスト                            # try it
   ```
+
+  Already installed without the `ja` extra (error `No module named
+  'pyopenjtalk'`)? Add it: `pipx inject piper-tts "piper-tts[ja]"`.
 
   and set the *Text-to-speech command* to `say-ja {text}`. `say-ja` plays
   through `ffplay` (`sudo pacman -S ffmpeg`). The CLI reloads the model on
