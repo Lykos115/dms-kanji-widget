@@ -55,15 +55,29 @@ aloud. Two sources:
 * **Local text-to-speech** (default): runs the *Text-to-speech command* with
   `{text}` replaced by all on and kun readings, separated by pauses. Default
   is `espeak-ng -v ja -s 130 {text}` — `sudo pacman -S espeak-ng`. Its
-  Japanese voice is robotic but clear. For a natural voice install
-  [piper](https://github.com/rhasspy/piper) with a Japanese model and set the
-  command to a small wrapper script, e.g. `~/.local/bin/say-ja {text}` with
+  Japanese voice is robotic but clear.
+
+  For a natural voice use [Piper](https://github.com/OHF-Voice/piper1-gpl)
+  (the maintained successor of rhasspy/piper) with its Japanese voice:
 
   ```sh
-  #!/bin/sh
-  echo "$1" | piper --model ~/piper/ja_JP-test-medium.onnx --output-raw | aplay -r 22050 -f S16_LE -t raw -
+  pipx install "piper-tts[http]"          # or: pip install --user "piper-tts[http]"
+  python3 -m piper.download_voices ja_JA-hi_fi_captain-medium --data-dir ~/.local/share/piper
+  install -Dm755 ~/dms-kanji-widget/say-ja ~/.local/bin/say-ja
   ```
 
+  and set the *Text-to-speech command* to `say-ja {text}`. The `say-ja`
+  script in this repo runs `piper -m ja_JA-hi_fi_captain-medium -- <text>`,
+  which plays through `ffplay` (`sudo pacman -S ffmpeg`). The CLI reloads the
+  model on every call, so there is about a second of delay; for instant
+  playback start Piper's server once, e.g. from niri's `spawn-at-startup`:
+
+  ```sh
+  python3 -m piper.http_server -m ja_JA-hi_fi_captain-medium --data-dir ~/.local/share/piper
+  ```
+
+  `say-ja` uses the server whenever it is running. `PIPER_VOICE`,
+  `PIPER_DATA_DIR` and `PIPER_PORT` override its defaults.
 * **JapanesePod101 online clip**: streams the pronunciation of the kanji's
   first reading from assets.languagepod101.com with the *Player command*
   (`mpv --no-video --really-quiet {file}` by default, `sudo pacman -S mpv`).
@@ -81,6 +95,7 @@ once even with several pills and widgets.
 
 | file | role |
 |---|---|
+| `say-ja` | Piper text-to-speech wrapper, see Audio |
 | `KanjiWidget/plugin.json` | composite manifest, `widget` + `desktop` surfaces |
 | `KanjiWidget/KanjiDeck.qml` | loads `data/kanji.json`, filters by level, rotates on a timer, plays audio |
 | `KanjiWidget/KanjiBarWidget.qml` | `PluginComponent`: pill + popout |
