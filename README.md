@@ -1,25 +1,30 @@
-# JLPT Kanji — Dank Material Shell plugin
+# Jlab sentences — Dank Material Shell plugin
 
-Rotates through the JLPT kanji (N5 → N1, 2211 characters) with on'yomi,
-kun'yomi and meaning, rendered by Dank Material Shell itself. One plugin,
-two surfaces (DMS ≥ 1.5.0 composite plugin):
+Rotates through the anime sentences of
+[Jlab's beginner course](https://ankiweb.net/shared/info/911122782) (the
+Anki deck "Japanese course based on Tae Kim's grammar guide & anime" from
+[Japanese Like a Breeze](https://www.japanese-like-a-breeze.com/)): the
+sentence as written, its hiragana reading, romaji, the English meaning and
+the deck's audio clip of the line. Rendered by Dank Material Shell itself.
+One plugin, two surfaces (DMS ≥ 1.5.0 composite plugin):
 
-* **Bar pill** — the current kanji (plus readings or meaning) in the DankBar.
-  Left click opens a popout card with the kanji, 音 on / 訓 kun readings,
-  meaning, stroke count and *Play* / *Next* / *Jisho* buttons. Right click
-  skips to the next kanji. With *open popouts on hover* enabled in the bar
-  settings the card opens on hover.
+* **Bar pill** — the current sentence in the DankBar (cut with … past a
+  set width). Left click opens a popout card with the sentence, reading,
+  romaji, meaning and *Play* / *Next* buttons. Right click skips to the next
+  sentence. With *open popouts on hover* enabled in the bar settings the
+  card opens on hover.
 * **Desktop widget** — text on the wallpaper layer, fixed where you put it.
   Right-click drag moves it, the corner handle resizes it, left click skips
-  to the next kanji, middle click speaks the readings.
+  to the next sentence, middle click plays it.
 
 Both surfaces share the settings. By default every instance (all monitors,
-bar and desktop) shows the same kanji; turn off *Same kanji everywhere* for
-independent rotations.
+bar and desktop) shows the same sentence; turn off *Same sentence everywhere*
+for independent rotations.
 
 Sibling plugins: [Hiragana](https://nemiru.tail2e41a3.ts.net/lykos/dms-hiragana-widget),
 [Katakana](https://nemiru.tail2e41a3.ts.net/lykos/dms-katakana-widget) and [JLPT vocab + Jlab listening](https://nemiru.tail2e41a3.ts.net/lykos/jlpt-kanji-widget)
-(the `dms-plugin` branch).
+(the `dms-plugin` branch). The JLPT kanji table this repo used to show is
+in the git history (commit c1c154c).
 
 ## Install
 
@@ -29,89 +34,102 @@ git clone https://nemiru.tail2e41a3.ts.net/lykos/dms-kanji-widget.git ~/dms-kanj
 ~/dms-kanji-widget/install.sh copy     # ...or copy, if you want to delete the clone
 ```
 
-Then in DMS: **Settings → Plugins → Scan for Plugins**, toggle *JLPT Kanji*
-on. Add `kanjiWidget` to a bar section under **Settings → DankBar → layout**,
-and/or add the desktop widget under **Settings → Desktop Widgets**. Settings
-(levels, timing, sizes, audio) are in the plugin's accordion in the Plugins tab.
+Then import the deck (next section), and in DMS: **Settings → Plugins →
+Scan for Plugins**, toggle *Jlab sentences* on. Add `jlabWidget` to a bar
+section under **Settings → DankBar → layout**, and/or add the desktop widget
+under **Settings → Desktop Widgets**. Settings (timing, sizes, audio) are in
+the plugin's accordion in the Plugins tab.
 
 Japanese text needs a CJK font: `sudo pacman -S noto-fonts-cjk`.
 
-Reload after editing the QML: `dms ipc call plugins reload kanjiWidget`.
+Reload after editing the QML: `dms ipc call plugins reload jlabWidget`.
+If you had the old JLPT Kanji plugin installed, run `install.sh` again (the
+plugin directory is now `JlabWidget`) and remove the stale `KanjiWidget`
+link from `~/.config/DankMaterialShell/plugins/`.
+
+## Importing the deck
+
+The sentences and clips are not in this repo (the audio is the deck's
+copyrighted anime audio). AnkiWeb only serves the `.apkg` to a logged-in
+account, so:
+
+1. Log in to AnkiWeb in a browser, open
+   https://ankiweb.net/shared/info/911122782 and press *Download* (about
+   111 MB).
+2. Run the importer on the file:
+
+```sh
+python3 ~/dms-kanji-widget/import-jlab ~/Downloads/Japanese_course_based_on_Tae_Kims_grammar_guide__anime.apkg
+```
+
+It writes `JlabWidget/data/jlab/`:
+
+| file | content |
+|---|---|
+| `sentences.json` | one entry per note, in course order: `sentence` (as written, kanji and kana), `hiragana` (words separated by spaces), `words`, `romaji`, `meaning` (first line of the deck's remark), `source` (the anime), `audio` (clip path) |
+| `words.json` | every word of those sentences, most common first, with romaji and the deck's gloss where it gives one. The deck has no per-word audio |
+| `media/*.mp3` | the sentence clips |
+
+Only the "Part 1: Listening comprehension" subdeck is taken by default.
+Useful variants:
+
+```sh
+python3 import-jlab deck.apkg --list-fields   # decks, note types and a sample note
+python3 import-jlab deck.apkg --deck ''       # every subdeck
+python3 import-jlab deck.apkg --limit 300     # only the first 300 sentences
+python3 import-jlab deck.apkg --no-media      # text only, no clips
+```
+
+Needs only Python 3 plus the `zstd` command (or the `zstandard` module) for
+the current package format. `data/jlab/` is git-ignored; never commit it.
+Re-running the importer overwrites the JSON and only extracts clips that are
+not there yet. Reload the plugin afterwards:
+`dms ipc call plugins reload jlabWidget`.
 
 ## Settings
 
 | section | keys |
 |---|---|
-| Content | JLPT levels (N5 … all), **seconds per kanji** (5–600), random / stroke order, same kanji everywhere, Japanese font |
-| Audio | speak automatically, audio source, text-to-speech command, player command |
-| Bar pill & popout | pill text (kanji / +readings / +meaning), max pill length, popout width, popout kanji size |
-| Desktop widget | kanji size, show readings / meaning / level+strokes, text outline, background opacity |
+| Content | **seconds per sentence** (3–600), only the first N sentences, random / course order, same sentence everywhere, Japanese font |
+| Audio | play automatically, audio player command |
+| Bar pill & popout | hiragana reading in the pill, pill max width, popout width, popout sentence size |
+| Desktop widget | sentence size, show reading / romaji / meaning / anime, text outline, background opacity |
 
 ## Audio
 
-*Play* in the popout (or middle click on the desktop widget) reads the kanji
-aloud. Two sources:
+*Play* in the popout (or middle click on the desktop widget) plays the
+sentence's clip from `JlabWidget/data/jlab/media/`. The clips are MP3, so
+the player is picked at run time as the first of `mpv`, `ffplay`, `pw-play`,
+`paplay` on PATH (`pw-play` and `paplay` only decode MP3 with a recent
+libsndfile, which is why they come last). *Audio player command* overrides
+that, e.g. `mpv --no-video {file}`; it is split on whitespace and run
+without a shell, so `{file}` must be a whole argument.
 
-* **Local text-to-speech** (default): runs the *Text-to-speech command* with
-  `{text}` replaced by all on and kun readings, separated by pauses. Default
-  is `espeak-ng -v ja -s 130 {text}` — `sudo pacman -S espeak-ng`. Its
-  Japanese voice is robotic but clear.
+*Play automatically* plays every new sentence as it appears. Only the
+instance that picked the sentence plays it, so with *Same sentence
+everywhere* on you hear it once even with several pills and widgets.
 
-  For a natural voice use [Piper](https://github.com/OHF-Voice/piper1-gpl)
-  (the maintained successor of rhasspy/piper) with its Japanese voice:
-
-  ```sh
-  pipx install "piper-tts[http,ja]"       # ja = Japanese phonemizer (OpenJTalk), http = server
-  install -Dm755 ~/dms-kanji-widget/say-ja ~/.local/bin/say-ja
-  say-ja setup                            # downloads the ja_JA-hi_fi_captain-medium voice
-  say-ja テスト                            # try it
-  ```
-
-  Already installed without the `ja` extra (error `No module named
-  'pyopenjtalk'`)? Add it: `pipx inject piper-tts pyopenjtalk-plus`.
-
-  and set the *Text-to-speech command* to `say-ja {text}`. `say-ja` plays the clip
-  with `pw-play`, `paplay`, `mpv` or `ffplay`, whichever exists.
-  `PIPER_SPEAKER=male` and `PIPER_LENGTH_SCALE=1.2` (slower) can be set in
-  `~/.config/environment.d/say-ja.conf`. The CLI reloads the model on
-  every call, about a second of delay; for instant playback run `say-ja server`
-  once, e.g. from niri's `spawn-at-startup`, and `say-ja` uses it automatically.
-  `say-ja setup` / `say-ja server` run Piper's modules with the Python that owns
-  the `piper` command, so `python3 -m piper ...` is never needed (with pipx it
-  fails: the system Python cannot see the package). `PIPER_VOICE`,
-  `PIPER_DATA_DIR` and `PIPER_PORT` override the defaults.
-
-  No sound from the widget? `say-ja` adds `~/.local/bin` to its own PATH and
-  logs every call to `~/.cache/say-ja.log`, so: (1) `say-ja テスト` in a
-  terminal must work first; (2) click *Play* in the popout (or middle-click the
-  desktop widget), *Speak automatically* is off by default; (3) if the log stays
-  empty DMS did not find the script, set the command to the full path
-  `/home/YOU/.local/bin/say-ja {text}`; (4) otherwise the log says what failed.
-* **JapanesePod101 online clip**: streams the pronunciation of the kanji's
-  first reading from assets.languagepod101.com with the *Player command*
-  (`mpv --no-video --really-quiet {file}` by default, `sudo pacman -S mpv`).
-  Not every single-kanji reading exists there; missing ones play a short
-  "not available" notice.
-
-The commands are split on whitespace and run without a shell, so `{text}` /
-`{file}` must be a whole argument.
-
-*Speak automatically* reads every new kanji as it appears. Only the instance
-that picked the kanji speaks, so with *Same kanji everywhere* on you hear it
-once even with several pills and widgets.
+No sound? (1) `mpv ~/dms-kanji-widget/JlabWidget/data/jlab/media/0.mp3`
+in a terminal must work. (2) Press *Play* and read `~/.cache/jlab-widget.log`:
+every attempt logs the clip path, the player it picked and any error. (3) If
+the log stays empty DMS is running an old copy of the plugin: `install.sh`
+symlinks the clone so pulls apply directly, and `dms kill; dms run -d`
+restarts the shell (`dms ipc call plugins reload jlabWidget` keeps
+cached QML). (4) A player that only lives in `~/.local/bin` is not on DMS's
+PATH: set *Audio player command* to its full path.
 
 ## Files
 
 | file | role |
 |---|---|
-| `say-ja` | Piper text-to-speech wrapper, see Audio |
-| `KanjiWidget/plugin.json` | composite manifest, `widget` + `desktop` surfaces |
-| `KanjiWidget/KanjiDeck.qml` | loads `data/kanji.json`, filters by level, rotates on a timer, plays audio |
-| `KanjiWidget/KanjiBarWidget.qml` | `PluginComponent`: pill + popout |
-| `KanjiWidget/KanjiDesktopWidget.qml` | `DesktopPluginComponent` |
-| `KanjiWidget/KanjiSettings.qml` | settings UI (`PluginSettings`) |
-| `KanjiWidget/data/kanji.json` | kanji list, from [davidluzgouveia/kanji-data](https://github.com/davidluzgouveia/kanji-data) via the main repo's `tools/build_data.py` |
+| `import-jlab` | extracts sentences, words and clips from the Jlab `.apkg` into `JlabWidget/data/jlab/` (git-ignored) |
+| `JlabWidget/plugin.json` | composite manifest, `widget` + `desktop` surfaces |
+| `JlabWidget/JlabDeck.qml` | loads `data/jlab/sentences.json`, rotates on a timer, plays the clip |
+| `JlabWidget/JlabBarWidget.qml` | `PluginComponent`: pill + popout |
+| `JlabWidget/JlabDesktopWidget.qml` | `DesktopPluginComponent` |
+| `JlabWidget/JlabSettings.qml` | settings UI (`PluginSettings`) |
+| `JlabWidget/data/jlab/` | the imported deck, not in git |
 
 Status: written against the DMS `master` plugin API and syntax-checked with
-`qmllint`, not yet run in a live DMS session. If DMS logs an error on load,
-`dms ipc call plugins reload kanjiWidget` prints it.
+`qmllint`, not yet run in a live DMS session with the real deck. If DMS logs
+an error on load, `dms ipc call plugins reload jlabWidget` prints it.

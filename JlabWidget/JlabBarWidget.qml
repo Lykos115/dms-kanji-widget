@@ -4,25 +4,21 @@ import qs.Common
 import qs.Widgets
 import qs.Modules.Plugins
 
-// Bar pill: shows the current kanji (optionally with a reading or the meaning).
+// Bar pill: shows the current sentence (optionally with its hiragana reading).
 // Left click (or hover, if the bar has "open popouts on hover" enabled) opens a
-// card with kanji / readings / meaning and Play / Next / Jisho buttons.
-// Right click skips to the next kanji.
+// card with the sentence, its reading, romaji, meaning and Play / Next buttons.
+// Right click skips to the next sentence.
 PluginComponent {
     id: root
 
-    layerNamespacePlugin: "kanji-widget"
+    layerNamespacePlugin: "jlab-widget"
 
-    readonly property string barStyle: pluginData.barStyle ?? "kanji+reading"
+    readonly property bool barReading: pluginData.barReading ?? false
+    readonly property real barMaxWidth: pluginData.barMaxWidth ?? 360
     readonly property string fontFamily: (pluginData.fontFamily ?? "") !== "" ? pluginData.fontFamily : Theme.fontFamily
-    readonly property real popoutMainSize: pluginData.popoutMainSize ?? 96
-    readonly property int barMaxChars: pluginData.barMaxChars ?? 28
+    readonly property real popoutMainSize: pluginData.popoutMainSize ?? 28
 
-    function shorten(t, n) {
-        return t.length > n ? t.slice(0, n - 1).trimEnd() + "…" : t;
-    }
-
-    KanjiDeck {
+    JlabDeck {
         id: deck
         settings: root.pluginData
     }
@@ -36,19 +32,22 @@ PluginComponent {
             StyledText {
                 text: deck.main
                 font.family: root.fontFamily
-                font.pixelSize: Theme.fontSizeXLarge
+                font.pixelSize: Theme.fontSizeLarge
                 font.weight: Font.Bold
                 color: Theme.primary
+                elide: Text.ElideRight
+                width: Math.min(implicitWidth, root.barMaxWidth)
                 anchors.verticalCenter: parent.verticalCenter
             }
 
             StyledText {
-                visible: text.length > 0
-                text: root.barStyle === "kanji+reading" ? root.shorten(deck.reading, root.barMaxChars)
-                    : root.barStyle === "kanji+meaning" ? root.shorten(deck.meaning, root.barMaxChars) : ""
+                visible: root.barReading && deck.reading !== ""
+                text: deck.reading
                 font.family: root.fontFamily
                 font.pixelSize: Theme.fontSizeSmall
                 color: Theme.surfaceVariantText
+                elide: Text.ElideRight
+                width: Math.min(implicitWidth, root.barMaxWidth)
                 anchors.verticalCenter: parent.verticalCenter
             }
         }
@@ -61,9 +60,11 @@ PluginComponent {
             StyledText {
                 text: deck.main
                 font.family: root.fontFamily
-                font.pixelSize: Theme.fontSizeLarge
+                font.pixelSize: Theme.fontSizeMedium
                 font.weight: Font.Bold
                 color: Theme.primary
+                elide: Text.ElideRight
+                width: Math.min(implicitWidth, 120)
                 anchors.horizontalCenter: parent.horizontalCenter
                 horizontalAlignment: Text.AlignHCenter
             }
@@ -73,8 +74,7 @@ PluginComponent {
     popoutContent: Component {
         PopoutComponent {
             id: card
-            headerText: deck.tag !== "" ? deck.tag + " KANJI" : "KANJI"
-            detailsText: deck.strokes > 0 ? deck.strokes + " strokes" : ""
+            headerText: deck.source !== "" ? deck.source.toUpperCase() : "JLAB"
             showCloseButton: true
 
             Column {
@@ -91,49 +91,29 @@ PluginComponent {
                     font.pixelSize: root.popoutMainSize
                     font.weight: Font.Bold
                     color: Theme.surfaceText
+                    wrapMode: Text.Wrap
                     horizontalAlignment: Text.AlignHCenter
                 }
 
-                Row {
-                    visible: deck.on !== ""
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        text: "音"
-                        font.family: root.fontFamily
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    StyledText {
-                        text: deck.on
-                        font.family: root.fontFamily
-                        font.pixelSize: Theme.fontSizeXLarge
-                        color: Theme.primary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                StyledText {
+                    visible: deck.reading !== "" && deck.reading.replace(/ /g, "") !== deck.main
+                    width: parent.width - parent.leftPadding - parent.rightPadding
+                    text: deck.reading
+                    font.family: root.fontFamily
+                    font.pixelSize: Theme.fontSizeLarge
+                    color: Theme.primary
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
-                Row {
-                    visible: deck.kun !== ""
-                    anchors.horizontalCenter: parent.horizontalCenter
-                    spacing: Theme.spacingS
-
-                    StyledText {
-                        text: "訓"
-                        font.family: root.fontFamily
-                        font.pixelSize: Theme.fontSizeSmall
-                        color: Theme.surfaceVariantText
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
-                    StyledText {
-                        text: deck.kun
-                        font.family: root.fontFamily
-                        font.pixelSize: Theme.fontSizeXLarge
-                        color: Theme.secondary
-                        anchors.verticalCenter: parent.verticalCenter
-                    }
+                StyledText {
+                    visible: deck.romaji !== ""
+                    width: parent.width - parent.leftPadding - parent.rightPadding
+                    text: deck.romaji
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    wrapMode: Text.Wrap
+                    horizontalAlignment: Text.AlignHCenter
                 }
 
                 StyledText {
@@ -141,8 +121,8 @@ PluginComponent {
                     width: parent.width - parent.leftPadding - parent.rightPadding
                     text: deck.meaning
                     font.pixelSize: Theme.fontSizeMedium
-                    color: Theme.surfaceVariantText
-                    wrapMode: Text.WordWrap
+                    color: Theme.surfaceText
+                    wrapMode: Text.Wrap
                     horizontalAlignment: Text.AlignHCenter
                 }
 
@@ -211,33 +191,10 @@ PluginComponent {
                             onClicked: deck.next(true)
                         }
                     }
-
-                    Rectangle {
-                        width: jishoLabel.implicitWidth + Theme.spacingL * 2
-                        height: 34
-                        radius: 17
-                        color: jishoArea.containsMouse ? Theme.surfaceContainerHighest : Theme.surfaceContainerHigh
-
-                        StyledText {
-                            id: jishoLabel
-                            anchors.centerIn: parent
-                            text: "Jisho"
-                            color: Theme.surfaceText
-                            font.pixelSize: Theme.fontSizeMedium
-                        }
-
-                        MouseArea {
-                            id: jishoArea
-                            anchors.fill: parent
-                            hoverEnabled: true
-                            cursorShape: Qt.PointingHandCursor
-                            onClicked: Quickshell.execDetached(["xdg-open", "https://jisho.org/search/" + encodeURIComponent(deck.main) + "%20%23kanji"])
-                        }
-                    }
                 }
             }
         }
     }
 
-    popoutWidth: pluginData.popoutWidth ?? 340
+    popoutWidth: pluginData.popoutWidth ?? 380
 }

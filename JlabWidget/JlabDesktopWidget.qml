@@ -4,23 +4,24 @@ import qs.Modules.Plugins
 
 // Desktop widget: DMS draws it on the bottom layer (above the wallpaper,
 // below windows) and remembers position and size. Move/resize it from
-// Settings → Desktop Widgets (right-click drag). Left click = next kanji,
-// middle click = speak the readings.
+// Settings → Desktop Widgets (right-click drag). Left click = next sentence,
+// middle click = play it.
 DesktopPluginComponent {
     id: root
 
-    minWidth: 120
-    minHeight: 100
+    minWidth: 160
+    minHeight: 80
 
-    readonly property real mainSize: pluginData.desktopMainSize ?? 64
+    readonly property real mainSize: pluginData.desktopMainSize ?? 28
     readonly property real backgroundOpacity: (pluginData.desktopBackgroundOpacity ?? 0) / 100
     readonly property bool showReading: pluginData.showReading ?? true
+    readonly property bool showRomaji: pluginData.showRomaji ?? false
     readonly property bool showMeaning: pluginData.showMeaning ?? true
-    readonly property bool showLevel: pluginData.showLevel ?? true
+    readonly property bool showSource: pluginData.showSource ?? false
     readonly property string fontFamily: (pluginData.fontFamily ?? "") !== "" ? pluginData.fontFamily : Theme.fontFamily
     readonly property bool textShadow: pluginData.desktopTextShadow ?? true
 
-    KanjiDeck {
+    JlabDeck {
         id: deck
         settings: root.pluginData
     }
@@ -45,30 +46,30 @@ DesktopPluginComponent {
             font.pixelSize: root.mainSize
             font.weight: Font.Bold
             color: Theme.surfaceText
+            wrapMode: Text.Wrap
             style: root.textShadow ? Text.Outline : Text.Normal
             styleColor: Theme.withAlpha(Theme.surface, 0.7)
         }
 
         Text {
-            visible: root.showReading && deck.on !== ""
+            visible: root.showReading && deck.reading !== "" && deck.reading.replace(/ /g, "") !== deck.main
             width: parent.width
-            text: deck.on
+            text: deck.reading
             font.family: root.fontFamily
-            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.3)
+            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.6)
             color: Theme.primary
-            wrapMode: Text.WordWrap
+            wrapMode: Text.Wrap
             style: root.textShadow ? Text.Outline : Text.Normal
             styleColor: Theme.withAlpha(Theme.surface, 0.7)
         }
 
         Text {
-            visible: root.showReading && deck.kun !== ""
+            visible: root.showRomaji && deck.romaji !== ""
             width: parent.width
-            text: deck.kun
-            font.family: root.fontFamily
-            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.3)
-            color: Theme.secondary
-            wrapMode: Text.WordWrap
+            text: deck.romaji
+            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.45)
+            color: Theme.surfaceVariantText
+            wrapMode: Text.Wrap
             style: root.textShadow ? Text.Outline : Text.Normal
             styleColor: Theme.withAlpha(Theme.surface, 0.7)
         }
@@ -77,22 +78,21 @@ DesktopPluginComponent {
             visible: root.showMeaning && deck.meaning !== ""
             width: parent.width
             text: deck.meaning
-            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.25)
-            color: Theme.surfaceVariantText
-            wrapMode: Text.WordWrap
-            maximumLineCount: 3
-            elide: Text.ElideRight
+            font.pixelSize: Math.max(Theme.fontSizeSmall, root.mainSize * 0.5)
+            color: Theme.surfaceText
+            wrapMode: Text.Wrap
             style: root.textShadow ? Text.Outline : Text.Normal
             styleColor: Theme.withAlpha(Theme.surface, 0.7)
         }
 
         Text {
-            visible: root.showLevel && deck.tag !== ""
+            visible: root.showSource && deck.source !== ""
             width: parent.width
-            text: deck.tag + (deck.strokes > 0 ? " · " + deck.strokes + " strokes" : "")
+            text: deck.source
             font.pixelSize: Theme.fontSizeSmall
             color: Theme.surfaceVariantText
             opacity: 0.8
+            elide: Text.ElideRight
         }
     }
 
