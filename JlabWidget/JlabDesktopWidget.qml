@@ -1,5 +1,6 @@
 import QtQuick
 import qs.Common
+import qs.Services
 import qs.Modules.Plugins
 
 // Desktop widget: DMS draws it on the bottom layer (above the wallpaper,
@@ -12,18 +13,41 @@ DesktopPluginComponent {
     minWidth: 160
     minHeight: 80
 
-    readonly property real mainSize: pluginData.desktopMainSize ?? 28
-    readonly property real backgroundOpacity: (pluginData.desktopBackgroundOpacity ?? 0) / 100
-    readonly property bool showReading: pluginData.showReading ?? true
-    readonly property bool showRomaji: pluginData.showRomaji ?? false
-    readonly property bool showMeaning: pluginData.showMeaning ?? true
-    readonly property bool showSource: pluginData.showSource ?? false
-    readonly property string fontFamily: (pluginData.fontFamily ?? "") !== "" ? pluginData.fontFamily : Theme.fontFamily
-    readonly property bool textShadow: pluginData.desktopTextShadow ?? true
+    // DMS gives a desktop widget *instance* only its own per-instance config as
+    // pluginData (what you set under Settings → Desktop Widgets → this widget).
+    // The plugin-wide settings (Settings → Plugins → Jlab sentences) never reach
+    // it, so merge them in: instance keys win, the plugin-wide ones fill the rest.
+    property var globalData: ({})
+    readonly property var cfg: Object.assign({}, globalData, pluginData ?? {})
+
+    function reloadGlobal() {
+        const id = pluginId !== "" ? pluginId : "jlabWidget";
+        globalData = SettingsData.getPluginSettingsForPlugin ? SettingsData.getPluginSettingsForPlugin(id) : {};
+    }
+
+    Component.onCompleted: reloadGlobal()
+    onPluginIdChanged: reloadGlobal()
+
+    Connections {
+        target: PluginService
+        function onPluginDataChanged(changedId) {
+            if (changedId === (root.pluginId !== "" ? root.pluginId : "jlabWidget"))
+                root.reloadGlobal();
+        }
+    }
+
+    readonly property real mainSize: cfg.desktopMainSize ?? 28
+    readonly property real backgroundOpacity: (cfg.desktopBackgroundOpacity ?? 0) / 100
+    readonly property bool showReading: cfg.showReading ?? true
+    readonly property bool showRomaji: cfg.showRomaji ?? false
+    readonly property bool showMeaning: cfg.showMeaning ?? true
+    readonly property bool showSource: cfg.showSource ?? false
+    readonly property string fontFamily: (cfg.fontFamily ?? "") !== "" ? cfg.fontFamily : Theme.fontFamily
+    readonly property bool textShadow: cfg.desktopTextShadow ?? true
 
     JlabDeck {
         id: deck
-        settings: root.pluginData
+        settings: root.cfg
     }
 
     Rectangle {

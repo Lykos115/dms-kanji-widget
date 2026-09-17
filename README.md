@@ -38,7 +38,10 @@ Then import the deck (next section), and in DMS: **Settings → Plugins →
 Scan for Plugins**, toggle *Jlab sentences* on. Add `jlabWidget` to a bar
 section under **Settings → DankBar → layout**, and/or add the desktop widget
 under **Settings → Desktop Widgets**. Settings (timing, sizes, audio) are in
-the plugin's accordion in the Plugins tab.
+the plugin's accordion in the Plugins tab; they apply to the bar pill and to
+every desktop widget. Each desktop widget also has its own copy of the same
+page (Settings → Desktop Widgets → the widget's card): anything changed there
+overrides the plugin-wide value for that one widget only.
 
 Japanese text needs a CJK font: `sudo pacman -S noto-fonts-cjk`.
 
